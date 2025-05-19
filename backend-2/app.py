@@ -1,6 +1,7 @@
 import os
 
 from flask import Flask
+from flask_cors import CORS
 
 from db import db, init_db
 from util.blueprint import register_blueprints
@@ -11,6 +12,7 @@ FLASK_PORT = os.environ.get("FLASK_PORT")
 DATABASE_URI = os.environ.get("DATABASE_URI")
 
 app = Flask(__name__)
+CORS(app)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URI
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
