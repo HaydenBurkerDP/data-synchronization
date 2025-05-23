@@ -1,0 +1,25 @@
+.data-synchronization-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  .users-lists-wrapper {
+    display: grid;
+    grid-template-columns: auto auto;
+    width: 90%;
+    border: 1px solid gray;
+    border-radius: 10px;
+
+    .users-list {
+      max-height: calc(100vh - 200px);
+      min-height: 50px;
+      overflow-y: auto;
+      padding: 5px 15px;
+      box-sizing: border-box;
+    }
+
+    .user-buttons {
+      padding: 5px 15px;
+    }
+  }
+}

@@ -1,5 +1,5 @@
-import DataSynchronization from "./components/DataSynchronization";
-import MissingVariables from "./components/MissingVariables";
+import DataSynchronization from "./components/pages/DataSynchronization";
+import MissingVariables from "./components/pages/MissingVariables";
 
 import { backend1Url, backend2Url } from "./envConfig";
 
