@@ -1,7 +1,15 @@
+import os
+from datetime import datetime, timezone
+import requests
+
 from flask import request, jsonify
+from sqlalchemy import or_
 
 from db import db
 from models.users import Users
+
+SYNC_URL = os.environ.get("SYNC_URL")
+last_sync_date = datetime.now(timezone.utc)
 
 
 def add_user():
@@ -56,3 +64,42 @@ def delete_user(user_id):
     db.session.commit()
 
     return jsonify({"message": "user deleted"}), 200
+
+
+def sync_users():
+    unsynced_user_records = db.session.query(Users).filter(or_(Users.external_id == None, Users.updated_date > last_sync_date)).all()
+    mapped_users = {str(user.user_id): user for user in unsynced_user_records}
+    unsynced_users = Users.schema.dump(unsynced_user_records, many=True)
+    sync_update_objs = []
+
+    for user in unsynced_users:
+        external_user_obj = {
+            "external_id": user["user_id"],
+            "name": user["first_name"] + " " + user["last_name"],
+            "email": user["email"],
+            "color": user["favorite_color"]
+        }
+
+        update_obj = {
+            "operation": "add",
+            "payload": external_user_obj
+        }
+
+        if user["external_id"]:
+            update_obj["operation"] = "update"
+            external_user_obj["user_id"] = user["external_id"]
+
+        sync_update_objs.append(update_obj)
+    if sync_update_objs:
+        response = requests.patch(f"{SYNC_URL}/users/batch-update", json={"users": sync_update_objs})
+
+        if response.status_code != 200:
+            return jsonify({"message": "unable to sync records"}), 500
+
+        record_response = response.json().get("results")
+        for response_user in record_response:
+            user = mapped_users.get(response_user.get("external_id"))
+            user.external_id = response_user.get("user_id")
+        db.session.commit()
+
+    return jsonify({"message": "users synced", "results": Users.schema.dump(unsynced_user_records, many=True)}), 200

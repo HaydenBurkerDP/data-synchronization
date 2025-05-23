@@ -54,3 +54,38 @@ def delete_user(user_id):
     db.session.commit()
 
     return jsonify({"message": "user deleted"}), 200
+
+
+def batch_update_users():
+    post_data = request.json
+    users = post_data.get("users")
+    user_records = []
+
+    for user in users:
+        operation = user.get("operation")
+
+        if operation == "add":
+            payload = user.get("payload")
+            new_user = Users()
+
+            new_user.external_id = payload.get("external_id", None)
+            new_user.name = payload.get("name", "")
+            new_user.email = payload.get("email", "")
+            new_user.color = payload.get("color", "")
+
+            db.session.add(new_user)
+            user_records.append(new_user)
+
+        elif operation == "update":
+            payload = user.get("payload")
+            print(payload)
+            user = db.session.query(Users).filter(Users.user_id == payload.get("user_id")).first()
+
+            user.external_id = payload.get("external_id", None)
+            user.name = payload.get("name", "")
+            user.email = payload.get("email", "")
+            user.color = payload.get("color", "")
+            user_records.append(user)
+    db.session.commit()
+
+    return jsonify({"message": "user batch updated", "results": Users.schema.dump(user_records, many=True)}), 200

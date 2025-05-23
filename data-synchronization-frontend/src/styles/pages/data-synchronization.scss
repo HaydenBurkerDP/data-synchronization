@@ -5,7 +5,7 @@
 
   .users-lists-wrapper {
     display: grid;
-    grid-template-columns: auto auto;
+    grid-template-columns: 55% 45%;
     width: 90%;
     border: 1px solid gray;
     border-radius: 10px;
@@ -19,6 +19,8 @@
     }
 
     .user-buttons {
+      display: flex;
+      gap: 10px;
       padding: 5px 15px;
     }
   }

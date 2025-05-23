@@ -31,10 +31,10 @@ const DataSynchronization = () => {
     },
   };
 
-  const handleResponse = (res) => {
+  const handleResponse = useCallback((res) => {
     if (!res.ok) throw new Error(res.statusText);
     return res.json();
-  };
+  }, []);
 
   const handleAddUser = useCallback(
     (url, body) =>
@@ -43,7 +43,7 @@ const DataSynchronization = () => {
         method: "POST",
         body: JSON.stringify(body),
       }).then(handleResponse),
-    []
+    [handleResponse]
   );
 
   const handleEditUser = useCallback(
@@ -53,7 +53,7 @@ const DataSynchronization = () => {
         method: "PUT",
         body: JSON.stringify(body),
       }).then(handleResponse),
-    []
+    [handleResponse]
   );
 
   const handleDeleteUser = useCallback(
@@ -62,7 +62,25 @@ const DataSynchronization = () => {
         headers,
         method: "DELETE",
       }).then(handleResponse),
-    []
+    [handleResponse]
+  );
+
+  const handleSyncUsers = useCallback(
+    () =>
+      fetch(`${backend1Url}/users/sync`, { headers, method: "PATCH" })
+        .then(handleResponse)
+        .then((res) => {
+          setUsers1((prev) => {
+            const userMapping = Object.fromEntries(
+              res.results.map((user) => [user.user_id, user])
+            );
+            return prev.map((user) => userMapping[[user.user_id]] || user);
+          });
+          fetch(`${backend2Url}/users`)
+            .then(handleResponse)
+            .then((res) => setUsers2(res.results));
+        }),
+    [backend1Url, backend2Url, handleResponse]
   );
 
   const renderUsers1 = (users) =>
@@ -129,6 +147,7 @@ const DataSynchronization = () => {
 
         <div className="user-buttons">
           <button onClick={() => setSelectedModal(user1Modal)}>Add user</button>
+          <button onClick={handleSyncUsers}>Sync users</button>
         </div>
         <div className="user-buttons">
           <button onClick={() => setSelectedModal(user2Modal)}>Add user</button>

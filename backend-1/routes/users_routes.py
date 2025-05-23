@@ -23,3 +23,8 @@ def update_user(user_id):
 @users_routes.route("/user/<user_id>", methods=["DELETE"])
 def delete_user(user_id):
     return users_controller.delete_user(user_id)
+
+
+@users_routes.route("/users/sync", methods=["PATCH"])
+def sync_users():
+    return users_controller.sync_users()

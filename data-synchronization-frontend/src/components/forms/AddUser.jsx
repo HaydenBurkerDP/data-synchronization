@@ -31,7 +31,7 @@ const AddUser = ({
               <input
                 type="text"
                 id={id}
-                autoComplete="none"
+                autoComplete="off"
                 value={formData[[field]] || ""}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, [field]: e.target.value }))

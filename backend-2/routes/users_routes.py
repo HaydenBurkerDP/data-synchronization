@@ -23,3 +23,8 @@ def update_user(user_id):
 @users_routes.route("/user/<user_id>", methods=["DELETE"])
 def delete_user(user_id):
     return users_controller.delete_user(user_id)
+
+
+@users_routes.route("/users/batch-update", methods=["PATCH"])
+def batch_update_users():
+    return users_controller.batch_update_users()

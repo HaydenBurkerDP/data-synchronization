@@ -12,6 +12,7 @@ marshmallow = "*"
 flask-marshmallow = "*"
 marshmallow-sqlalchemy = "*"
 flask-cors = "*"
+requests = "*"
 
 [dev-packages]
 
