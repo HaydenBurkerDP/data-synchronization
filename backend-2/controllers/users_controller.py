@@ -61,31 +61,32 @@ def batch_update_users():
     users = post_data.get("users")
     user_records = []
 
-    for user in users:
-        operation = user.get("operation")
+    for user_data in users:
+        user_id = user_data.get("user_id", None)
+        email = user_data.get("email", "")
+        user = None
 
-        if operation == "add":
-            payload = user.get("payload")
-            new_user = Users()
+        if user_id:
+            user = db.session.query(Users).filter(Users.user_id == user_id).first()
 
-            new_user.external_id = payload.get("external_id", None)
-            new_user.name = payload.get("name", "")
-            new_user.email = payload.get("email", "")
-            new_user.color = payload.get("color", "")
+        if not user:
+            user = db.session.query(Users).filter(Users.email == email).first()
 
-            db.session.add(new_user)
-            user_records.append(new_user)
+        if not user:
+            user = Users()
 
-        elif operation == "update":
-            payload = user.get("payload")
-            print(payload)
-            user = db.session.query(Users).filter(Users.user_id == payload.get("user_id")).first()
+        user.external_id = user_data.get("external_id", user.external_id)
+        user.name = user_data.get("name", user.name)
+        user.email = user_data.get("email", user.email)
+        user.color = user_data.get("color", user.color)
 
-            user.external_id = payload.get("external_id", None)
-            user.name = payload.get("name", "")
-            user.email = payload.get("email", "")
-            user.color = payload.get("color", "")
-            user_records.append(user)
+        if not user.name or not user.email:
+            return jsonify({"message": "missing required field(s)"}), 400
+
+        if not user.user_id:
+            db.session.add(user)
+
+        user_records.append(user)
     db.session.commit()
 
     return jsonify({"message": "user batch updated", "results": Users.schema.dump(user_records, many=True)}), 200

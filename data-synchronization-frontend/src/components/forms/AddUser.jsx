@@ -45,14 +45,24 @@ const AddUser = ({
       <div className="buttons-wrapper">
         <button onClick={handleClose}>Cancel</button>
         <button
-          onClick={() =>
+          onClick={() => {
+            const inputFilled = (key) =>
+              !userFields.includes(key) || formData[[key]];
+
+            if (
+              !inputFilled("email") ||
+              !inputFilled("first_name") ||
+              !inputFilled("name")
+            )
+              return;
+
             handleAddUser(url, formData)
               .then((res) => {
                 setUsers((prev) => [...prev, res.results]);
                 handleClose();
               })
-              .catch(console.error)
-          }
+              .catch(console.error);
+          }}
         >
           Save
         </button>

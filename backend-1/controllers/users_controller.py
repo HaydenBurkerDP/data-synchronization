@@ -67,6 +67,7 @@ def delete_user(user_id):
 
 
 def sync_users():
+    global last_sync_date
     unsynced_user_records = db.session.query(Users).filter(or_(Users.external_id == None, Users.updated_date > last_sync_date)).all()
     mapped_users = {str(user.user_id): user for user in unsynced_user_records}
     unsynced_users = Users.schema.dump(unsynced_user_records, many=True)
@@ -80,26 +81,31 @@ def sync_users():
             "color": user["favorite_color"]
         }
 
-        update_obj = {
-            "operation": "add",
-            "payload": external_user_obj
-        }
-
         if user["external_id"]:
-            update_obj["operation"] = "update"
             external_user_obj["user_id"] = user["external_id"]
 
-        sync_update_objs.append(update_obj)
-    if sync_update_objs:
-        response = requests.patch(f"{SYNC_URL}/users/batch-update", json={"users": sync_update_objs})
+        sync_update_objs.append(external_user_obj)
 
-        if response.status_code != 200:
+    if sync_update_objs:
+        try:
+            response = requests.patch(f"{SYNC_URL}/users/batch-update", json={"users": sync_update_objs})
+            success = response.status_code == 200
+        except:
+            success = False
+
+        if not success:
             return jsonify({"message": "unable to sync records"}), 500
 
         record_response = response.json().get("results")
-        for response_user in record_response:
-            user = mapped_users.get(response_user.get("external_id"))
-            user.external_id = response_user.get("user_id")
-        db.session.commit()
 
-    return jsonify({"message": "users synced", "results": Users.schema.dump(unsynced_user_records, many=True)}), 200
+        if record_response:
+            for response_user in record_response:
+                user = mapped_users.get(response_user.get("external_id"))
+                user.external_id = response_user.get("user_id")
+            db.session.commit()
+    else:
+        record_response = []
+
+    last_sync_date = datetime.now(timezone.utc)
+
+    return jsonify({"message": "users synced", "results": [Users.schema.dump(unsynced_user_records, many=True), record_response]}), 200

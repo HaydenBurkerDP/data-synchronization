@@ -16,7 +16,10 @@ const user2Fields = ["name", "email", "color"];
 const DataSynchronization = () => {
   const [users1, setUsers1] = useState([]);
   const [users2, setUsers2] = useState([]);
+  const [isUsers1Loading, setIsUsers1Loading] = useState(true);
+  const [isUsers2Loading, setIsUsers2Loading] = useState(true);
   const [selectedModal, setSelectedModal] = useState("");
+  const [highlightedUser, setHighlightedUser] = useState("");
 
   const modalContent = {
     [user1Modal]: {
@@ -70,15 +73,26 @@ const DataSynchronization = () => {
       fetch(`${backend1Url}/users/sync`, { headers, method: "PATCH" })
         .then(handleResponse)
         .then((res) => {
-          setUsers1((prev) => {
+          const updateUsers = (prev, userResults) => {
             const userMapping = Object.fromEntries(
-              res.results.map((user) => [user.user_id, user])
+              userResults.map((user) => [user.user_id, user])
             );
-            return prev.map((user) => userMapping[[user.user_id]] || user);
-          });
-          fetch(`${backend2Url}/users`)
-            .then(handleResponse)
-            .then((res) => setUsers2(res.results));
+            const updatedUsers = prev.map(
+              (user) => userMapping[[user.user_id]] || user
+            );
+            const userIds = prev.map((user) => user.user_id);
+
+            for (const userId in userMapping) {
+              if (!userIds.includes(userId)) {
+                updatedUsers.push(userMapping[[userId]]);
+              }
+            }
+
+            return updatedUsers;
+          };
+
+          setUsers1((prev) => updateUsers(prev, res.results[0]));
+          setUsers2((prev) => updateUsers(prev, res.results[1]));
         }),
     [backend1Url, backend2Url, handleResponse]
   );
@@ -93,6 +107,16 @@ const DataSynchronization = () => {
         handleDeleteUser={handleDeleteUser}
         url={backend1Url}
         setUsers={setUsers1}
+        onMouseEnter={() => {
+          setHighlightedUser(user.user_id);
+        }}
+        onMouseLeave={() => {
+          setHighlightedUser("");
+        }}
+        isHighlighted={
+          highlightedUser === user.user_id ||
+          highlightedUser === user.external_id
+        }
       />
     ));
 
@@ -106,6 +130,16 @@ const DataSynchronization = () => {
         handleDeleteUser={handleDeleteUser}
         url={backend2Url}
         setUsers={setUsers2}
+        onMouseEnter={() => {
+          setHighlightedUser(user.user_id);
+        }}
+        onMouseLeave={() => {
+          setHighlightedUser("");
+        }}
+        isHighlighted={
+          highlightedUser === user.user_id ||
+          highlightedUser === user.external_id
+        }
       />
     ));
 
@@ -114,36 +148,58 @@ const DataSynchronization = () => {
     const signal = controller.signal;
 
     fetch(`${backend1Url}/users`, { signal })
-      .then((res) => res.json())
+      .then(handleResponse)
       .then((res) => setUsers1(res.results))
       .catch((err) => {
         if (!signal.aborted) console.error(err);
+      })
+      .finally(() => {
+        if (!signal.aborted) setIsUsers1Loading(false);
       });
 
     return () => controller.abort();
-  }, []);
+  }, [backend1Url, handleResponse]);
 
   useEffect(() => {
     const controller = new AbortController();
     const signal = controller.signal;
 
     fetch(`${backend2Url}/users`, { signal })
-      .then((res) => res.json())
+      .then(handleResponse)
       .then((res) => setUsers2(res.results))
       .catch((err) => {
         if (!signal.aborted) console.error(err);
+      })
+      .finally(() => {
+        if (!signal.aborted) setIsUsers2Loading(false);
       });
 
     return () => controller.abort();
-  }, []);
+  }, [backend2Url, handleResponse]);
 
   return (
     <div className="data-synchronization-container">
       <h2>Data Synchronization</h2>
 
       <div className="users-lists-wrapper">
-        <div className="users-list">{renderUsers1(users1)}</div>
-        <div className="users-list">{renderUsers2(users2)}</div>
+        <div className="users-list">
+          {isUsers1Loading ? (
+            <h4>Loading...</h4>
+          ) : users1.length ? (
+            renderUsers1(users1)
+          ) : (
+            <h4>Users not found</h4>
+          )}
+        </div>
+        <div className="users-list">
+          {isUsers2Loading ? (
+            <h4>Loading...</h4>
+          ) : users2.length ? (
+            renderUsers2(users2)
+          ) : (
+            <h4>Users not found</h4>
+          )}
+        </div>
 
         <div className="user-buttons">
           <button onClick={() => setSelectedModal(user1Modal)}>Add user</button>

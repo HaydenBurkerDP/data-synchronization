@@ -3,14 +3,19 @@ import useDebounce from "../hooks/useDebounce";
 
 const initialFormData = { body: {}, hasChanged: false, isUpdating: false };
 
-const UserRow = ({
-  user,
-  userFields,
-  handleEditUser,
-  handleDeleteUser,
-  url,
-  setUsers,
-}) => {
+const UserRow = (props) => {
+  const {
+    user,
+    userFields,
+    handleEditUser,
+    handleDeleteUser,
+    url,
+    setUsers,
+    onMouseEnter,
+    onMouseLeave,
+    isHighlighted,
+  } = props;
+
   const [formData, setFormData] = useState(initialFormData);
   const debouncedFormData = useDebounce(formData);
 
@@ -25,7 +30,18 @@ const UserRow = ({
   };
 
   useEffect(() => {
+    const inputFilled = (key) =>
+      !Object.keys(debouncedFormData.body).includes(key) ||
+      debouncedFormData.body[[key]];
+
     if (!debouncedFormData.hasChanged || debouncedFormData.isUpdating) return;
+
+    if (
+      !inputFilled("email") ||
+      !inputFilled("first_name") ||
+      !inputFilled("name")
+    )
+      return;
 
     setFormData((prev) => ({ ...prev, isUpdating: true, hasChanged: false }));
     handleEditUser(url, userId, debouncedFormData.body)
@@ -44,7 +60,11 @@ const UserRow = ({
   }, [debouncedFormData, handleEditUser, url, userId]);
 
   return (
-    <div className="user-row-container">
+    <div
+      className={`user-row-container ${isHighlighted ? "highlighted" : ""}`}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       {userFields.map((field) => {
         const id = field.split("_").join("-");
         const displayName = field
