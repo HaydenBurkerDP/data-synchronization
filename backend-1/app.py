@@ -1,3 +1,4 @@
+import sys
 import os
 
 from flask import Flask
@@ -5,6 +6,7 @@ from flask_cors import CORS
 
 from db import db, init_db
 from util.blueprint import register_blueprints
+from populate_users import populate_users
 
 
 FLASK_HOST = os.environ.get("FLASK_HOST")
@@ -24,4 +26,9 @@ with app.app_context():
 register_blueprints(app)
 
 if __name__ == "__main__":
+    with app.app_context():
+        if len(sys.argv) > 2:
+            if (sys.argv[1]) == "csv-data":
+                populate_users(sys.argv[2])
+
     app.run(FLASK_HOST, port=FLASK_PORT, debug=True)
