@@ -75,14 +75,12 @@ def sync_users():
 
     for user in unsynced_users:
         external_user_obj = {
-            "external_id": user["user_id"],
+            "user_id": user["external_id"],
             "name": user["first_name"] + " " + user["last_name"],
             "email": user["email"],
-            "color": user["favorite_color"]
+            "color": user["favorite_color"],
+            "external_id": user["user_id"]
         }
-
-        if user["external_id"]:
-            external_user_obj["user_id"] = user["external_id"]
 
         sync_update_objs.append(external_user_obj)
 
